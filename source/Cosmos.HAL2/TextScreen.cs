@@ -12,15 +12,15 @@ namespace Cosmos.HAL
     public class TextScreen : TextScreenBase
     {
         protected byte Color = 0x0F; // White
-        protected UInt16 mBackgroundClearCellValue;
-        protected UInt16 mTextClearCellValue;
-        protected UInt32 mRow2Addr;
-        protected UInt32 mScrollSize;
-        protected Int32 mCursorSize = 25; // 25 % as C# Console class
+        protected ushort mBackgroundClearCellValue;
+        protected ushort mTextClearCellValue;
+        public uint mRow2Addr;
+        public uint mScrollSize;
+        protected int mCursorSize = 25; // 25 % as C# Console class
         protected bool mCursorVisible = true;
 
-        protected Core.IOGroup.TextScreen IO = new Cosmos.Core.IOGroup.TextScreen();
-        protected readonly MemoryBlock08 mRAM;
+        public Core.IOGroup.TextScreen IO = new Cosmos.Core.IOGroup.TextScreen();
+        public MemoryBlock08 mRAM;
 
         /// <summary>
         /// Creat new instance of the <see cref="TextScreen"/> class.
@@ -39,15 +39,23 @@ namespace Cosmos.HAL
             // Set the Console default colors: White foreground on Black background, the default value of mClearCellValue is set there too as it is linked with the Color
             SetColors(ConsoleColor.White, ConsoleColor.Black);
             mBackgroundClearCellValue = mTextClearCellValue;
-            mRow2Addr = (UInt32)(Cols * 2);
-            mScrollSize = (UInt32)(Cols * (Rows - 1) * 2);
+            mRow2Addr = (uint)(Cols * 2);
+            mScrollSize = (uint)(Cols * (Rows - 1) * 2);
             SetCursorSize(mCursorSize);
             SetCursorVisible(mCursorVisible);
             TextScreenHelpers.Debug("End of TextScreen..ctor");
         }
 
-        public override UInt16 Rows { get { return 25; } }
-        public override UInt16 Cols { get { return 80; } }
+        public void UpdateWindowSize()
+        {
+            IO.Memory = new Cosmos.Core.MemoryBlock(0xB8000, (uint)(Cols * Rows * 2));
+            mRAM = IO.Memory.Bytes;
+            mScrollSize = (uint)(Cols * (Rows - 1) * 2);
+            mRow2Addr = (uint)(Cols * 2);
+        }
+
+        public override ushort Rows { set; get; } = 25;
+        public override ushort Cols { set; get; } = 80;
 
         /// <summary>
         /// Clear text screen.
@@ -74,12 +82,12 @@ namespace Cosmos.HAL
         {
             get
             {
-                var xScreenOffset = (UInt32)((aX + aY * Cols) * 2);
+                var xScreenOffset = (uint)((aX + aY * Cols) * 2);
                 return (byte)mRAM[xScreenOffset];
             }
             set
             {
-                var xScreenOffset = (UInt32)((aX + aY * Cols) * 2);
+                var xScreenOffset = (uint)((aX + aY * Cols) * 2);
                 mRAM[xScreenOffset] = value;
                 mRAM[xScreenOffset + 1] = Color;
             }
@@ -99,7 +107,7 @@ namespace Cosmos.HAL
             Color = (byte)(((byte)(aForeground) | ((byte)(aBackground) << 4)) & 0x7F);
             
             // The Color | the NUL character this is used to Clear the Screen
-            mTextClearCellValue = (UInt16)(Color << 8 | 0x00);
+            mTextClearCellValue = (ushort)(Color << 8 | 0x00);
         }
 
         /// <summary>
